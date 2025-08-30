@@ -63,7 +63,7 @@ COMMONFLAGS += -O2
 endif
 
 COMMONFLAGS += $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(PKG_CONFIG) --cflags gio-2.0 chafa fftw3f opus opusfile vorbis ogg glib-2.0 taglib)
-COMMONFLAGS += -fstack-protector-strong -Wformat -Werror=format-security -fPIE -D_FORTIFY_SOURCE=2
+COMMONFLAGS += -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2
 COMMONFLAGS += -Wall -Wextra -Wpointer-arith
 CFLAGS = $(COMMONFLAGS)
 

@@ -3727,7 +3727,7 @@ extern "C" {
 #define MA_VERSION_STRING   MA_XSTRINGIFY(MA_VERSION_MAJOR) "." MA_XSTRINGIFY(MA_VERSION_MINOR) "." MA_XSTRINGIFY(MA_VERSION_REVISION)
 
 #if defined(_MSC_VER) && !defined(__clang__)
-    #pragma warning(push)
+    #Ragma warning(push)
     #pragma warning(disable:4201)   /* nonstandard extension used: nameless struct/union */
     #pragma warning(disable:4214)   /* nonstandard extension used: bit field types other than int */
     #pragma warning(disable:4324)   /* structure was padded due to alignment specifier */
@@ -16187,7 +16187,7 @@ static void ma_thread_wait__posix(ma_thread* pThread)
 static ma_result ma_mutex_init__posix(ma_mutex* pMutex)
 {
     int result;
-    
+
     if (pMutex == NULL) {
         return MA_INVALID_ARGS;
     }
@@ -28108,7 +28108,7 @@ static ma_result ma_device_stop__alsa(ma_device* pDevice)
         ssize_t result = read(((struct pollfd*)pDevice->alsa.pPollDescriptorsPlayback)[0].fd, &t, sizeof(t));
         if (result == -1) {
                 perror("read error");
-        }        
+        }
     }
 
     }
@@ -69708,7 +69708,7 @@ static void* ma_resource_manager_data_stream_get_page_data_pointer(ma_resource_m
 #ifdef __GNUC__
 #ifndef __APPLE__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+/* #pragma GCC diagnostic ignored "-Wmaybe-uninitialized" */
 #endif
 #endif
 

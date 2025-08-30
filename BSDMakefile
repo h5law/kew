@@ -1,0 +1,101 @@
+# $kew: BSDMakefile for OpenBSD
+
+CC = clang
+CXX = clang++
+PKG_CONFIG = pkg-config
+
+# Libraries required by kew
+LIBS = fftw3 chafa opus opusfile vorbis taglib ogg glib-2.0
+# Optional: include faad2 if AAC/M4A support is needed
+LIBS += faad2
+
+# DIAG_FLAGS= -Wall -Wpedantic -Werror
+DIAG_FLAGS = -Wall
+
+# DEBUG_FLAGS = -g -MD
+DEBUG_FLAGS = -g
+
+# Compiler flags
+CFLAGS = $(DIAG_FLAGS) $(DEBUG_FLAGS) -O2 -pthread \
+		 -Iinclude/miniaudio -Iinclude/minimp4 \
+		 -Iinclude/nestegg -Iinclude/stb_image -Iinclude/imgtotxt \
+		 -Iinclude/imgtotxt/ext
+
+CFLAGS += $(foreach lib,$(LIBS),$(shell $(PKG_CONFIG) --cflags lib))
+# Add -DUSE_DBUS if MPRIS support is desired
+# CFLAGS += -DUSE_DBUS
+# LIBS += dbus-glib
+
+# Linker flags
+LDFLAGS = -pthread -lm
+LDFLAGS += $(foreach lib,$(LIBS),$(shell $(PKG_CONFIG) --libs lib))
+# Link against libatomic if needed
+# LDFLAGS += -latomic
+
+SRCS = src/common_ui.c src/common.c src/sound.c \
+	   src/directorytree.c src/notifications.c \
+       src/soundcommon.c src/m4a.c src/search_ui.c src/playlist_ui.c \
+       src/player_ui.c src/soundbuiltin.c src/mpris.c src/playerops.c \
+       src/utils.c src/file.c src/imgfunc.c src/cache.c \
+	   src/songloader.c src/playlist.c src/term.c src/settings.c \
+	   src/visuals.c src/kew.c
+
+# TagLib wrapper
+WRAPPER_SRC = src/tagLibWrapper.cpp
+WRAPPER_OBJ = src/tagLibWrapper.o
+
+MAN_PAGE = kew.1
+MAN_DIR ?= $(PREFIX)/share/man
+
+all: kew
+
+# Generate object lists
+OBJS_C = $(SRCS:%.c=%.o)
+
+NESTEGG_SRCS = include/nestegg/nestegg.c
+NESTEGG_OBJS = $(NESTEGG_SRCS:%.c=%.o)
+
+# All objects together
+OBJS = $(OBJS_C) $(NESTEGG_OBJS)
+
+# Compile C sources
+src/%.o: src/%.c BSDMakefile
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+
+# Compile explicit C++ sources in src/
+src/%.o: src/%.cpp BSDMakefile
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
+
+# Compile TagLib wrapper C++ source
+$(WRAPPER_OBJ): $(WRAPPER_SRC) BSDMakefile
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(DEFINES) -c $< -o $@
+
+# Compile C files in include/nestegg
+src/nestegg/%.o: include/nestegg/%.c BSDMakefile
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+
+# Link all objects safely together using C++ linker
+kew: $(OBJS) $(WRAPPER_OBJ) BSDMakefile
+	$(CXX) -o kew $(OBJS) $(WRAPPER_OBJ) $(LIBS) $(LDFLAGS) -lglib-2.0
+
+.PHONY: install
+install: all
+	mkdir -p $(DESTDIR)$(MAN_DIR)/man1
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	install -m 0755 kew $(DESTDIR)$(PREFIX)/bin/kew
+	install -m 0644 docs/kew.1 $(DESTDIR)$(MAN_DIR)/man1/kew.1
+
+.PHONY: uninstall
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/kew
+	rm -f $(DESTDIR)$(MAN_DIR)/man1/kew.1
+
+.PHONY: clean
+clean:
+	rm -rf $(OBJS) kew
+	rm -rf *.o */*.o */**/*.o
+	rm -rf *.d */*.d */**/*.d
